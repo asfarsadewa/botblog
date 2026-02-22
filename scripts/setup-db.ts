@@ -1,6 +1,50 @@
 import { sql } from '@vercel/postgres';
 import { MIGRATIONS } from '../lib/migrations';
 
+function splitStatements(input: string): string[] {
+  const results: string[] = [];
+  let buf = '';
+  let inDollarQuote = false;
+  let dollarTag = '';
+  let i = 0;
+
+  while (i < input.length) {
+    if (input[i] === '$') {
+      const end = input.indexOf('$', i + 1);
+      if (end !== -1) {
+        const tag = input.slice(i, end + 1);
+        if (!inDollarQuote) {
+          inDollarQuote = true;
+          dollarTag = tag;
+          buf += tag;
+          i = end + 1;
+          continue;
+        } else if (tag === dollarTag) {
+          inDollarQuote = false;
+          dollarTag = '';
+          buf += tag;
+          i = end + 1;
+          continue;
+        }
+      }
+    }
+
+    if (!inDollarQuote && input[i] === ';') {
+      const stmt = buf.trim();
+      if (stmt) results.push(stmt);
+      buf = '';
+    } else {
+      buf += input[i];
+    }
+    i++;
+  }
+
+  const remaining = buf.trim();
+  if (remaining) results.push(remaining);
+
+  return results;
+}
+
 async function main() {
   console.log('Running migrations…\n');
 
@@ -22,17 +66,11 @@ async function main() {
     }
 
     console.log(`  → applying ${migration.name}…`);
-    // Execute multi-statement SQL by splitting on semicolon groups
-    // (vercel/postgres executes one statement at a time)
-    const statements = migration.sql
-      .split(/;\s*\n/)
-      .map((s) => s.trim())
-      .filter(Boolean);
+    // Split on semicolons, skipping those inside $$ dollar-quoted blocks
+    const statements = splitStatements(migration.sql);
 
     for (const stmt of statements) {
-      if (stmt) {
-        await sql.query(stmt);
-      }
+      await sql.query(stmt);
     }
 
     await sql`INSERT INTO _migrations (name) VALUES (${migration.name})`;
