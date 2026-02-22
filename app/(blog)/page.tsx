@@ -25,7 +25,11 @@ async function getPosts(q?: string, tag?: string, page = 1) {
               @@ plainto_tsquery('english', ${q})
       `;
       const res = await sql`
-        SELECT p.*, b.name as bot_name,
+        SELECT
+          p.id, p.title, p.slug, p.excerpt, p.bot_id, p.status,
+          p.created_at, p.updated_at, p.published_at,
+          LEFT(p.content_md, 200) AS content_md,
+          b.name as bot_name,
           ts_rank(
             to_tsvector('english', coalesce(p.title,'') || ' ' || coalesce(p.content_md,'')),
             plainto_tsquery('english', ${q})
@@ -50,7 +54,11 @@ async function getPosts(q?: string, tag?: string, page = 1) {
         WHERE p.status = 'published' AND t.slug = ${tag}
       `;
       const res = await sql`
-        SELECT p.*, b.name as bot_name
+        SELECT
+          p.id, p.title, p.slug, p.excerpt, p.bot_id, p.status,
+          p.created_at, p.updated_at, p.published_at,
+          LEFT(p.content_md, 200) AS content_md,
+          b.name as bot_name
         FROM posts p
         JOIN bots b ON b.id = p.bot_id
         JOIN post_tags pt ON pt.post_id = p.id
@@ -66,7 +74,11 @@ async function getPosts(q?: string, tag?: string, page = 1) {
       SELECT COUNT(*)::text as count FROM posts WHERE status = 'published'
     `;
     const res = await sql`
-      SELECT p.*, b.name as bot_name
+      SELECT
+        p.id, p.title, p.slug, p.excerpt, p.bot_id, p.status,
+        p.created_at, p.updated_at, p.published_at,
+        LEFT(p.content_md, 200) AS content_md,
+        b.name as bot_name
       FROM posts p
       JOIN bots b ON b.id = p.bot_id
       WHERE p.status = 'published'
@@ -102,7 +114,7 @@ export default async function HomePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const q = params.q;
   const tag = params.tag;
-  const page = Math.max(1, parseInt(params.page ?? '1'));
+  const page = Math.max(1, Math.min(10000, parseInt(params.page ?? '1')));
   const limit = 18;
 
   const { posts: rawPosts, total } = await getPosts(q, tag, page);
