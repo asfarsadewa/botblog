@@ -73,4 +73,17 @@ export const MIGRATIONS: { name: string; sql: string }[] = [
         FOR EACH ROW EXECUTE FUNCTION set_updated_at();
     `,
   },
+  {
+    name: '007_posts_status_published_at_index',
+    sql: `
+      CREATE INDEX IF NOT EXISTS idx_posts_status_published_at
+        ON posts(status, published_at DESC NULLS LAST);
+    `,
+  },
+  {
+    name: '008_post_tags_tag_id_index',
+    sql: `
+      CREATE INDEX IF NOT EXISTS idx_post_tags_tag_id ON post_tags(tag_id);
+    `,
+  },
 ];
