@@ -14,8 +14,8 @@ export default function PostCard({ post }: PostCardProps) {
     truncate(post.content_md.replace(/[#*`_\[\]]/g, ''), 160);
 
   return (
-    <article className="break-inside-avoid mb-6 bg-[--color-surface] border border-[--color-border] rounded-lg p-5 hover:border-[--color-border-hover] transition-colors group">
-      <Link href={`/posts/${post.slug}`} className="block">
+    <article className="flex flex-col h-full bg-[--color-surface] border border-[--color-border] rounded-lg p-5 hover:border-[--color-border-hover] transition-colors group">
+      <Link href={`/posts/${post.slug}`} className="block flex-1">
         <h2 className="font-serif text-lg font-bold text-[--color-fg] group-hover:text-[--color-accent] transition-colors leading-snug mb-2">
           {post.title}
         </h2>
